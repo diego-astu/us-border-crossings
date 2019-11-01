@@ -24,7 +24,7 @@ COLUMNS :
 	Date (keep)
 	Measure (keep)
 	Value (keep)
-	Location
+	Location (ignore)
 
 
 
@@ -38,22 +38,23 @@ File must be sorted (desc) by date, value, measure, border
 
 
 ####PROGRAM SUMMARY######
-### STEP 1 : READIN INPUT AND REFORMAT
-### 1A REFORMAT VARIABLES TO BE THE TYPE I WILL NEED
+### STEP 1 : READIN INPUT AND ENSURE PROPER FORMAT
+### 1A REFORMAT VARIABLES
 ### 1B REDUCE SIZE: keep only the fields I care about
-### For the purposes of this challenge, 
-###you'll want to pay attention to the following fields:
-Border: Designates what border was crossed
-Date: Timestamp indicating month and year osf crossing
-Measure: Indicates means, or type, of crossing being measured (e.g., vehicle, equipment, passenger or pedestrian)
-Value: Number of crossings
 
 
-#### STEP 2 : CREATE SUMMARY STATISTICS FOR EACH BORDER*MEASURE*DATE
-#### 2A. SORT DATA SO THAT I CAN USE INTERTOOLS.GROUPBY 
-#### 2B. FOR EACH BORDER*MEASURE*DATE CALCULATE NUMBER OF CROSSINGS
-#### 2C. WITHIN EACH BORDER*MEASURE, APPEND MOVING AVERAGE FOR THAT MONTH
-#### 2D. TRANSFORM RUNNING TOTAL 
+#### STEP 2 : PREPARE DATA FOR SUMMARIZING
+#### If a given border*meausure combination does not exist, no problem
+#### But if for a given border*measure, there are missing date entries
+#### That will make my moving average incorrect (need to pad with zeros)
+#### Within each border*measure combination, insert value 0 for missing dates
+
+
+#### STEP 3 : CREATE SUMMARY STATISTICS FOR EACH BORDER*MEASURE*DATE
+#### 3A. SORT DATA SO THAT I CAN USE INTERTOOLS.GROUPBY 
+#### 3B. FOR EACH BORDER*MEASURE*DATE CALCULATE NUMBER OF CROSSINGS
+#### 3C. WITHIN EACH BORDER*MEASURE, APPEND MOVING AVERAGE FOR THAT MONTH
+#### 3D. TRANSFORM RUNNING TOTAL 
 ####FOR EACH BORDER*CROSSING TYPE (aka measure) , CALCULATE:
 		FOR EACH MONTH:
 			TOTAL CROSSINGS
@@ -64,6 +65,7 @@ Value: Number of crossings
 
 
 SORT OUTPUT FILE
+FILTER TO ONLY INCLUDE CASES WITH VALUE = 0
 MAKE SURE IT CONTAINS THE RIGHT VARIABLES
 MAKE SURE IT IS KEYED AT THE RIGHT LEVEL
 MAKE SURE IT HAS THE RIGHT NUMBER OF ROWS (AKA UNIQUE CROSSTABS OF KEYS INCLUDING EMPTY MONTHS OR CATEGORIES)
@@ -112,6 +114,35 @@ def StringToFloat(string_in):
 def DateToString(datetime_in):
     		return datetime_in.strftime("%m/%d/%Y %I:%M:%S %p")
 
+
+
+def ListAllMonths(firstmonth, lastmonth):
+	daterange = []
+	while firstmonth <= lastmonth:
+		daterange.append(DateToString(firstmonth))
+		firstmonth += relativedelta(months=1)
+	return daterange
+
+
+
+def PadDictlistWithCustomValues((key, value), my_dictlist, key_to_impute, imputed_value = 0.0):
+	#This function scans a dictlist (my_dictlist) for a key:value pair
+	#If key:value pair is found, it returns dictlist as-is
+	#If not, it returns an augmented dictlist with ONE additional row
+	#The additional row is a copy of the FIRST row, with TWO modifications
+	### modify the key:value pair, and impute one additional value in dict
+    for dict_i in my_dictlist:
+        if any(dict_i[key] == value for dict_i in my_dictlist):
+            return my_dictlist
+        else:
+        	#create new temp dict
+        	dict_j = dict_i.copy()
+        	#modify the temp dict so it has the missing key:value pair.
+        	dict_j[key] = value
+        	#perform imputation
+        	dict_j[key_to_impute] = imputed_value
+        	ReturnsNone = my_dictlist.extend([dict(dict_j)])
+        	return my_dictlist
 # Define  global variables
 input_filepath = os.path.join(os.getcwd(), '../input/small_Border_Crossing_Entry_Data.csv')
 
@@ -121,13 +152,13 @@ input_filepath = os.path.join(os.getcwd(), '../input/small_Border_Crossing_Entry
 #keep track of unique values of border,measure
 #keep track of min/max date 
 #########
-input0 = [] #input data 
-unique_values_border, unique_values_measure, unique_values_date = set(), set(), set()
+input0 = [] #object that will be my input data 
+unique_values_date = set() #keep track of unique dates
 with open(input_filepath) as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-    	# convert the Date variable which is a string to be a datetime, in 12-hour format
-  		# allow for irregularity in whether we receive datetime or just date
+    	# convert the Date variable which is a string to be a datetime
+  		# Keep only 1st 10 characters to allow for irregularity in date/datetime input
     	yearmonth_as_datetime0 = datetime.datetime.strptime(row['Date'][:10], "%m/%d/%Y")
     	#collapse that date into a yearmonth, set at midnight of the first of the month
     	yearmonth_as_datetime1 = datetime.datetime(
@@ -145,9 +176,7 @@ with open(input_filepath) as csvfile:
 
 
     	#add to set if unique value
-    	unique_values_border.add(border_out)
     	unique_values_date.add(yearmonth_as_datetime1)
-        unique_values_measure.add(measure_out)
         
     	
     	#prepare output: keep only border, date, measure, and value
@@ -158,7 +187,7 @@ with open(input_filepath) as csvfile:
     					StringToFloat(row['Value'])
     					]
 
-    	#add rows to input0
+    	#add rows (dicts) to input0 (list of dicts)
     	input0.append(dict(zip(output_keys,output_values))) 
 
 
@@ -168,52 +197,55 @@ with open(input_filepath) as csvfile:
 
 
 #########
-#STEP 2 : PAD MY DATASET WITH ZEROS WHERE NECESSARY
+#STEP 2 : PAD input DATASET WITH ZEROS WHERE NECESSARY
 #########
-#Before summarizing, data must contain one row per border*measure*month
-#If a given combination doesnt exist in data, must pad with zeros.
+#Before summarizing, I must pad data with zeros for dates that do not appear
+# for a given border*measure, if date doesnt exist, impute values with zero
 
 
-date_range = []
-lastmonth = max(unique_values_date)
-firstmonth = min(unique_values_date)
+#determine the range of dates that must exist for each border*measure
+date_range = ListAllMonths(
+	firstmonth=min(unique_values_date),
+	lastmonth=max(unique_values_date)
+	)
+#I want to groupby which necessitates sorting
+sorted_input = sorted(input0, key=operator.itemgetter('Border', 'Measure'))
 
-while firstmonth <= lastmonth:
-    date_range.append(DateToString(firstmonth))
-    firstmonth += relativedelta(months=1)
-
-
-cartesian_product_unique_values = itertools.product(unique_values_border,unique_values_measure,date_range)
-list_unique_tuples = list(cartesian_product_unique_values)
-
-list_of_dicts_unique_combos = []
-for tup in list_unique_tuples:
-	dict_out = {'Border':tup[0], 'Measure':tup[1], 'Date':tup[2]}
-	list_of_dicts_unique_combos.append(dict_out)
-
-
-#print(list(unique_values_border))
-#print(list(itertools.combinations(list_of_unique_sets,r=2)))
-print(list_of_dicts_unique_combos)
-
+padded_data = []
+for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure'])):
+	#i is a tuple that defines the key of the groupby
+	#j is a grouped object that, when converted to list, is a list of dicts 
+	## that is the sub-object we are iterating by
+	#print(i)
+	#print(list(j))
+	j_as_list = list(j)
+	#print(j_as_list['Date'] in d for d in date_range)
+	#within each list(j), if 
+	padded_j_list = []
+	for date in date_range:
+		#print(date)
+		padded_j_list = PadDictlistWithCustomValues(
+			('Date', date), 
+			my_dictlist = j_as_list,
+			key_to_impute = 'Value', 
+			imputed_value = 0.0)
+	padded_data = padded_data + padded_j_list
+	
 
 
 #########
 #STEP 3 : CREATE A NESTED FOR-LOOP FOR SUMMARY STATISTICS
 #########
 
-sorted_input = sorted(input0, key=operator.itemgetter('Border', 'Measure', 'Date'))
-print("******PRINT UNSORTED FIRST FEW ROWS******")
-PrintNRows(input0, Nrows = 10)
-print("******PRINT SORTED FIRST FEW ROWS******")
-PrintNRows(sorted_input,10)
+
+
+padded_sorted = sorted(padded_data, key=operator.itemgetter('Border', 'Measure', 'Date'))
 
 
 
-
-print("within each border*measure, figure out how many crossings there were per date and moving average")
-host_data = []
-for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure'])):
+print("within each border*measure*date, sum crossings and moving average")
+summarised_data = []
+for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measure'])):
 	running_total_previous_month = 0
 	index_this_month = 1
 	for k,l in itertools.groupby(j, key=lambda x:(x['Date'])):
@@ -222,12 +254,17 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 		else:
 			moving_average = int(round(running_total_previous_month/(index_this_month-1)))
 		total_this_month = sum(row['Value'] for row in l)
-		returndict = {'sum':total_this_month, 'moving_average':moving_average}
-
-		print(type(i))
-		returndict = {'Border':i[0], 'Measure':i[1], 'Date':k, 'sum':total_this_month,'moving_avg': moving_average}
-		host_data.append(returndict)
+		returndict = {'Border':i[0], 
+					'Measure':i[1], 
+					'Date':k, 
+					'Value':int(total_this_month),
+					'Average': moving_average}
+		print(returndict)
+		summarised_data.append(returndict)
+		summarised_data = filter(lambda d: d['Value'] > 0.001, summarised_data)
+		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
 		index_this_month = index_this_month + 1
 		running_total_previous_month = running_total_previous_month + total_this_month
+print('****OUTOUTOUT******')
+PrintNRows(summarised_data,100)
 
-#PrintNRows(host_data,10)
