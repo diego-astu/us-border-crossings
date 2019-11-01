@@ -1,4 +1,15 @@
 """
+TEST IDEAS:
+* What if dates are in different formats
+* What if theres a comma in one of the fields
+* What if theres 2 commas in one of the fields
+# What if two fields have a comma
+* What if the columns in the csv are in different orders
+
+"""
+
+
+"""
 ##############OVERVIEW##############
 For this challenge, we want to you to 
 calculate the total number of times 
@@ -37,9 +48,9 @@ File must be sorted (desc) by date, value, measure, border
 
 
 
-####PROGRAM SUMMARY######
+####SCRIPT SUMMARY######
 ### STEP 1 : READIN INPUT AND ENSURE PROPER FORMAT
-### 1A REFORMAT VARIABLES
+### 1A REFORMAT VARIABLES: DictReader can only read strings
 ### 1B REDUCE SIZE: keep only the fields I care about
 
 
@@ -144,7 +155,7 @@ def PadDictlistWithCustomValues((key, value), my_dictlist, key_to_impute, impute
         	ReturnsNone = my_dictlist.extend([dict(dict_j)])
         	return my_dictlist
 # Define  global variables
-input_filepath = os.path.join(os.getcwd(), '../input/small_Border_Crossing_Entry_Data.csv')
+input_filepath = os.path.join(os.getcwd(), '../input/large_Border_Crossing_Entry_Data.csv')
 
 #########
 #STEP 1 : read in dataset, 
@@ -173,6 +184,7 @@ with open(input_filepath) as csvfile:
     	yearmonth_out = DateToString(yearmonth_as_datetime1)
     	border_out = CleanWhitespace(row['Border'])
     	measure_out = CleanWhitespace(row['Measure'])
+    	value_out = StringToFloat(row['Value'])
 
 
     	#add to set if unique value
@@ -184,7 +196,7 @@ with open(input_filepath) as csvfile:
     	output_values = [border_out,
     					yearmonth_out,
     					measure_out,
-    					StringToFloat(row['Value'])
+    					value_out
     					]
 
     	#add rows (dicts) to input0 (list of dicts)
@@ -208,7 +220,7 @@ date_range = ListAllMonths(
 	firstmonth=min(unique_values_date),
 	lastmonth=max(unique_values_date)
 	)
-#I want to groupby which necessitates sorting
+#I want to groupby . this necessitates sorting
 sorted_input = sorted(input0, key=operator.itemgetter('Border', 'Measure'))
 
 padded_data = []
@@ -240,9 +252,6 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 
 
 padded_sorted = sorted(padded_data, key=operator.itemgetter('Border', 'Measure', 'Date'))
-
-
-
 print("within each border*measure*date, sum crossings and moving average")
 summarised_data = []
 for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measure'])):
@@ -259,7 +268,7 @@ for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measur
 					'Date':k, 
 					'Value':int(total_this_month),
 					'Average': moving_average}
-		print(returndict)
+		#print(returndict)
 		summarised_data.append(returndict)
 		summarised_data = filter(lambda d: d['Value'] > 0.001, summarised_data)
 		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)

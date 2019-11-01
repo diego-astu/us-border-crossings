@@ -87,6 +87,11 @@ function run_all_tests {
 
     cd ${GRADER_ROOT}/temp
     bash run.sh 2>&1
+    #the 2>&1 option means: "redirect stderr to a file named 1" 
+    # File descriptor 1 is the standard output (stdout).
+    # File descriptor 2 is the standard error (stderr).
+    # & indicates that what follows is a file descriptor and not a filename. 
+    # So the construct becomes: 2>&1.
     cd ../
 
     compare_outputs
