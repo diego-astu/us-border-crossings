@@ -1,0 +1,5 @@
+CheckBorderFieldFormat
+
+Remove ' Border' and re-insert
+Substitute '/\:&' for -
+Remove whitespace between countries/dashes
