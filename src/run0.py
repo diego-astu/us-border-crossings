@@ -86,7 +86,9 @@ MAKE SURE IT HAS THE RIGHT NUMBER OF ROWS (AKA UNIQUE CROSSTABS OF KEYS INCLUDIN
 
 
 #!/usr/bin/python3
+
 import csv
+from pathlib import Path
 import os
 import operator
 import itertools
@@ -99,7 +101,7 @@ from dateutil.relativedelta import relativedelta
 
 
 #Set global locale preference to US locale
-locale.setlocale(locale.LC_TIME, "en_US") 
+locale.setlocale(locale.LC_TIME, "en_US")
 def PrintNRows(iterable_object, Nrows = 4):
 	for i, row in enumerate(iterable_object):
 		print(i,row)
@@ -108,7 +110,7 @@ def PrintNRows(iterable_object, Nrows = 4):
 
 
 def CleanWhitespace(string_in):
-	#convert all contiguous whitespace to be single space 
+	#convert all contiguous whitespace to be single space
 	#remove leading and trailing whitespace,
 	cleaned_string = re.sub(r'\s+', ' ', string_in).strip()
 	return cleaned_string
@@ -130,13 +132,13 @@ def DateToString(datetime_in):
 def ListAllMonths(firstmonth, lastmonth):
 	daterange = []
 	while firstmonth <= lastmonth:
-		daterange.append(DateToString(firstmonth))
+		daterange.append(firstmonth)
 		firstmonth += relativedelta(months=1)
 	return daterange
 
 
 
-def PadDictlistWithCustomValues((key, value), my_dictlist, key_to_impute, imputed_value = 0.0):
+def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_value = 0.0):
 	#This function scans a dictlist (my_dictlist) for a key:value pair
 	#If key:value pair is found, it returns dictlist as-is
 	#If not, it returns an augmented dictlist with ONE additional row
@@ -154,55 +156,58 @@ def PadDictlistWithCustomValues((key, value), my_dictlist, key_to_impute, impute
         	dict_j[key_to_impute] = imputed_value
         	ReturnsNone = my_dictlist.extend([dict(dict_j)])
         	return my_dictlist
+
 # Define  global variables
-input_filepath = os.path.join(os.getcwd(), '../input/large_Border_Crossing_Entry_Data.csv')
+thisfile_path = Path(__file__)
+project_directory = thisfile_path.parent.parent
+input_filepath = project_directory / 'input' / "Border_Crossing_Entry_Data.csv"
+output_filepath = project_directory / 'output' / 'report.csv'
+
+
+
 
 #########
-#STEP 1 : read in dataset, 
-#make sure data conforms to desired formats
-#keep track of unique values of border,measure
-#keep track of min/max date 
+# STEP 1 : read in dataset,
+# make sure data conforms to desired formats
+# keep track of unique values of border,measure
+# keep track of min/max date
 #########
-input0 = [] #object that will be my input data 
-unique_values_date = set() #keep track of unique dates
+input0 = []  # object that will be my input data
+unique_values_date = set()  # keep track of unique dates
 with open(input_filepath) as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-    	# convert the Date variable which is a string to be a datetime
-  		# Keep only 1st 10 characters to allow for irregularity in date/datetime input
-    	yearmonth_as_datetime0 = datetime.datetime.strptime(row['Date'][:10], "%m/%d/%Y")
-    	#collapse that date into a yearmonth, set at midnight of the first of the month
-    	yearmonth_as_datetime1 = datetime.datetime(
-    		year = yearmonth_as_datetime0.year,
-    		month = yearmonth_as_datetime0.month,
-    		day = 1, 
-    		hour = 0,
-    		minute = 0,
-    		second = 0)
-    	
-    	#reformat for appending into input0
-    	yearmonth_out = DateToString(yearmonth_as_datetime1)
-    	border_out = CleanWhitespace(row['Border'])
-    	measure_out = CleanWhitespace(row['Measure'])
-    	value_out = StringToFloat(row['Value'])
+	reader = csv.DictReader(csvfile)
+	for row in reader:
+		# convert the Date variable which is a string to be a datetime
+		# Keep only 1st 10 characters to allow for irregularity in date/datetime input
+		yearmonth_as_datetime0 = datetime.datetime.strptime(row['Date'][:10], "%m/%d/%Y")
+		# collapse that date into a yearmonth, set at midnight of the first of the month
+		yearmonth_as_datetime1 = datetime.datetime(
+			year=yearmonth_as_datetime0.year,
+			month=yearmonth_as_datetime0.month,
+			day=1,
+			hour=0,
+			minute=0,
+			second=0)
 
+		# reformat for appending into input0
+		yearmonth_out = yearmonth_as_datetime1
+		border_out = CleanWhitespace(row['Border'])
+		measure_out = CleanWhitespace(row['Measure'])
+		value_out = StringToFloat(CleanWhitespace(row['Value']))
 
-    	#add to set if unique value
-    	unique_values_date.add(yearmonth_as_datetime1)
-        
-    	
-    	#prepare output: keep only border, date, measure, and value
-    	output_keys = ['Border','Date','Measure','Value']
-    	output_values = [border_out,
-    					yearmonth_out,
-    					measure_out,
-    					value_out
-    					]
+		# add to set if unique value
+		unique_values_date.add(yearmonth_as_datetime1)
 
-    	#add rows (dicts) to input0 (list of dicts)
-    	input0.append(dict(zip(output_keys,output_values))) 
+		# prepare output: keep only border, date, measure, and value
+		output_keys = ['Border', 'Date', 'Measure', 'Value']
+		output_values = [border_out,
+						 yearmonth_out,
+						 measure_out,
+						 value_out
+						 ]
 
-
+		# add rows (dicts) to input0 (list of dicts)
+		input0.append(dict(zip(output_keys, output_values)))
 
 
 
@@ -237,7 +242,8 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 	for date in date_range:
 		#print(date)
 		padded_j_list = PadDictlistWithCustomValues(
-			('Date', date), 
+			key='Date', 
+			value = date, 
 			my_dictlist = j_as_list,
 			key_to_impute = 'Value', 
 			imputed_value = 0.0)
@@ -265,7 +271,7 @@ for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measur
 		total_this_month = sum(row['Value'] for row in l)
 		returndict = {'Border':i[0], 
 					'Measure':i[1], 
-					'Date':k, 
+					'Date':DateToString(k), 
 					'Value':int(total_this_month),
 					'Average': moving_average}
 		#print(returndict)
@@ -274,6 +280,11 @@ for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measur
 		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
 		index_this_month = index_this_month + 1
 		running_total_previous_month = running_total_previous_month + total_this_month
-print('****OUTOUTOUT******')
-PrintNRows(summarised_data,100)
 
+
+    
+keys = summarised_data[0].keys()
+with open(output_filepath, 'w') as output_file:
+    dict_writer = csv.DictWriter(output_file, keys)
+    dict_writer.writeheader()
+    dict_writer.writerows(summarised_data)
