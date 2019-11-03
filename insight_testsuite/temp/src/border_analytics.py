@@ -96,7 +96,7 @@ import datetime
 import locale
 import collections
 import re
-from dateutil.relativedelta import relativedelta
+import datetime
 from fractions import Fraction
 from math import ceil
 
@@ -136,13 +136,16 @@ def DateToString(datetime_in):
     		return datetime_in.strftime("%m/%d/%Y %I:%M:%S %p")
 
 
+def IncreaseMonthByM(month_in,M):
+	return datetime.datetime(
+			year=month_in.year,
+			month=month_in.month + M,
+			day=month_in.day,
+			hour=month_in.hour,
+			minute=month_in.minute,
+			second=month_in.second)
 
-def ListAllMonths(firstmonth, lastmonth):
-	daterange = []
-	while firstmonth <= lastmonth:
-		daterange.append(firstmonth)
-		firstmonth += relativedelta(months=1)
-	return daterange
+
 
 
 
@@ -229,77 +232,77 @@ with open(input_filepath) as csvfile:
 
 
 #determine the range of dates that must exist for each border*measure
-date_range = ListAllMonths(
-	firstmonth=min(unique_values_date),
-	lastmonth=max(unique_values_date)
-	)
+firstmonth=min(unique_values_date)
+lastmonth=max(unique_values_date)
+
+
 #I want to groupby . this necessitates sorting
 sorted_input = sorted(input0, key=operator.itemgetter('Border', 'Measure'))
 
-padded_data = []
+summarised_data = []
 for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure'])):
 	#i is a tuple that defines the key of the groupby
 	#j is a grouped object that, when converted to list, is a list of dicts 
+	## this list of dicts is all the available data rows for that border*measure 
 	## that is the sub-object we are iterating by
 	#print(i)
 	#print(list(j))
 	j_as_list = list(j)
 	#print(j_as_list['Date'] in d for d in date_range)
 	#within each list(j), if 
-	padded_j_list = []
-	for date in date_range:
-		#print(date)
-		padded_j_list = PadDictlistWithCustomValues(
-			key='Date', 
-			value = date, 
-			my_dictlist = j_as_list,
-			key_to_impute = 'Value', 
-			imputed_value = 0.00)
-	padded_data = padded_data + padded_j_list
 	
+	#summarised_data = []
 
-
-#########
-#STEP 3 : CREATE A NESTED FOR-LOOP FOR SUMMARY STATISTICS
-#########
-
-
-
-padded_sorted = sorted(padded_data, key=operator.itemgetter('Border', 'Measure', 'Date'))
-print("within each border*measure*date, sum crossings and moving average")
-summarised_data = []
-for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measure'])):
 	running_total_previous_month = 0
 	index_this_month = 1
-	for k,l in itertools.groupby(j, key=lambda x:(x['Date'])):
+	this_month_datetime = firstmonth
+
+	while this_month_datetime <= lastmonth:
+		dictlist_augmented = PadDictlistWithCustomValues(
+			key='Date', 
+			value = this_month_datetime, 
+			my_dictlist = j_as_list, ##i can probably filter this if it would make execution faster but only if this fxn can handle an empty list
+			key_to_impute = 'Value', 
+			imputed_value = 0.00)
 		if index_this_month == 1:
 			moving_average = 0.00
 		else:
-			
 			moving_average = float(running_total_previous_month)/float(index_this_month-1)
-		total_this_month = sum(row['Value'] for row in l)
-		index_this_month = index_this_month + 1
-		running_total_previous_month = running_total_previous_month + total_this_month
-
-
-
-
-		returndict = {'Border':i[0], 
-					'Measure':i[1], 
-					'Date':DateToString(k), 
-					'Value':total_this_month,
-					'Average': int(my_round(moving_average))}
-		#print(returndict)
-		summarised_data.append(returndict)
-		summarised_data = filter(lambda d: d['Value'] > 0.0001, summarised_data)
-		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
 		
 
 
-    
-keys = ['Border','Date','Measure','Value','Average']
+		total_this_month = sum(int(row['Value']) for row in dictlist_augmented if row['Date'] == this_month_datetime)
+
+		returndict = {'Border':dictlist_augmented[0]['Border'], 
+					'Measure':dictlist_augmented[0]['Measure'], 
+					'Date':DateToString(this_month_datetime), 
+					'Value':total_this_month,
+					'Average': int(my_round(moving_average))
+					}
+
+		summarised_data = list(filter(lambda d: d['Value'] > 0.0001, summarised_data))
+		summarised_data.append(returndict)
+		
+
+
+		index_this_month = index_this_month + 1
+		running_total_previous_month = running_total_previous_month + total_this_month
+		this_month_datetime =  IncreaseMonthByM(this_month_datetime,1)
+
+
+
+
+
+
+summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
+print(summarised_data)
+
+
+
+
 with open(output_filepath, 'w') as output_file:
-    dict_writer = csv.DictWriter(output_file, keys)
+    dict_writer = csv.DictWriter(output_file, 
+    	fieldnames = ['Border','Date','Measure','Value','Average'])
     dict_writer.writeheader()
     dict_writer.writerows(summarised_data)
 
