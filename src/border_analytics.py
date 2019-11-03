@@ -104,10 +104,6 @@ from math import ceil
 
 
 
-#Set global locale preference to US locale
-locale.setlocale(locale.LC_TIME, "en_US")
-
-
 def my_round(num_in, round_to = 0):
 	twice_my_num = num_in * 2
 	# if twice my number is a whole number then 
