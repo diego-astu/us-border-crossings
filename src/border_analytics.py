@@ -97,11 +97,27 @@ import locale
 import collections
 import re
 from dateutil.relativedelta import relativedelta
+from fractions import Fraction
+from math import ceil
+
+
 
 
 
 #Set global locale preference to US locale
 locale.setlocale(locale.LC_TIME, "en_US")
+
+
+def my_round(num_in, round_to = 0):
+	twice_my_num = num_in * 2
+	# if twice my number is a whole number then 
+	# using the normal round function will use
+	# bankers rounding and i want integer rounding
+	if twice_my_num % 1 == 0 :
+		return ceil(num_in)
+	else:
+		return round(num_in,round_to)
+
 def PrintNRows(iterable_object, Nrows = 4):
 	for i, row in enumerate(iterable_object):
 		print(i,row)
@@ -115,14 +131,6 @@ def CleanWhitespace(string_in):
 	cleaned_string = re.sub(r'\s+', ' ', string_in).strip()
 	return cleaned_string
 
-def StringToFloat(string_in):
-	#impute missing values to zero
-	#else convert to float
-	if CleanWhitespace(string_in) == '':
-		return 0.00
-	else:
-		return float(string_in)
-	return string_as_float
 
 def DateToString(datetime_in):
     		return datetime_in.strftime("%m/%d/%Y %I:%M:%S %p")
@@ -138,7 +146,7 @@ def ListAllMonths(firstmonth, lastmonth):
 
 
 
-def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_value = 0.0):
+def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_value = 0.00):
 	#This function scans a dictlist (my_dictlist) for a key:value pair
 	#If key:value pair is found, it returns dictlist as-is
 	#If not, it returns an augmented dictlist with ONE additional row
@@ -193,7 +201,7 @@ with open(input_filepath) as csvfile:
 		yearmonth_out = yearmonth_as_datetime1
 		border_out = CleanWhitespace(row['Border'])
 		measure_out = CleanWhitespace(row['Measure'])
-		value_out = StringToFloat(CleanWhitespace(row['Value']))
+		value_out = int(row['Value'])
 
 		# add to set if unique value
 		unique_values_date.add(yearmonth_as_datetime1)
@@ -246,7 +254,7 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 			value = date, 
 			my_dictlist = j_as_list,
 			key_to_impute = 'Value', 
-			imputed_value = 0.0)
+			imputed_value = 0.00)
 	padded_data = padded_data + padded_j_list
 	
 
@@ -265,26 +273,33 @@ for i,j in itertools.groupby(padded_sorted, key=lambda x:(x['Border'], x['Measur
 	index_this_month = 1
 	for k,l in itertools.groupby(j, key=lambda x:(x['Date'])):
 		if index_this_month == 1:
-			moving_average = 0
+			moving_average = 0.00
 		else:
-			moving_average = int(round(running_total_previous_month/(index_this_month-1)))
+			
+			moving_average = float(running_total_previous_month)/float(index_this_month-1)
 		total_this_month = sum(row['Value'] for row in l)
-		returndict = {'Border':i[0], 
-					'Measure':i[1], 
-					'Date':DateToString(k), 
-					'Value':int(total_this_month),
-					'Average': moving_average}
-		#print(returndict)
-		summarised_data.append(returndict)
-		summarised_data = filter(lambda d: d['Value'] > 0.001, summarised_data)
-		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
 		index_this_month = index_this_month + 1
 		running_total_previous_month = running_total_previous_month + total_this_month
 
 
+
+
+		returndict = {'Border':i[0], 
+					'Measure':i[1], 
+					'Date':DateToString(k), 
+					'Value':total_this_month,
+					'Average': int(my_round(moving_average))}
+		#print(returndict)
+		summarised_data.append(returndict)
+		summarised_data = filter(lambda d: d['Value'] > 0.0001, summarised_data)
+		summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
+		
+
+
     
-keys = summarised_data[0].keys()
+keys = ['Border','Date','Measure','Value','Average']
 with open(output_filepath, 'w') as output_file:
     dict_writer = csv.DictWriter(output_file, keys)
     dict_writer.writeheader()
     dict_writer.writerows(summarised_data)
+
