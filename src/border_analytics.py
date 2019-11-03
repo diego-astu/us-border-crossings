@@ -1,11 +1,52 @@
 """
 TEST IDEAS:
-* What if dates are in different formats
-* What if theres a comma in one of the fields
-* What if theres 2 commas in one of the fields
-# What if two fields have a comma
-* What if the columns in the csv are in different orders
-
+* Change around formats in excel:
+* * * 
+* Add weird characters in excel:
+* * * comma in the middle of a string
+* * * comma in the end of a string
+* * * comma in the beginning of a string
+* * * first char of a cell is a comma
+* * * last char of a cell is a comma
+* * * first char of first cell is a comma
+* * * last char of last cell is a comma
+* * * all of the above but for newline characters n and r
+* Value Field Formatting
+* * * Value field is manually formatted numeric
+* * * Value field has comma or point separators
+* * * Value field has decimal points
+* * * Value field has non-numeric characters
+* * * Scientific Notation
+* Date Field Formatting
+* * * Try a wide variety of date formats
+* Text Field possible formatting troubles
+* * * What if dates are in different formats
+* * * What if theres a comma in one of the fields
+* * * What if theres 2 commas in one of the fields
+* * * What if two fields have a comma
+* * * What if the columns in the csv are in different orders
+* Data cardinality edge cases
+* * * What if there are no rows
+* * * What if only one row (one border*measure*date)
+* * * What if only one border*measure*date Category (but many rows)
+* * * What if only one Border*measure Category
+* * * What if only one Border*date Category
+* * * What if only one Measure*date Category
+* * * What if only one Morder Category
+* * * What if only one Date Category
+* * * What if only one Measure Category
+* Data missigness
+* * * What if a  field is blank?
+* * * What if a  field is =na()?
+* * * What if a  field is a single quote
+* * * What if a  field is a double quote
+* * * What if a  field is 2 single quotes
+* * * What if a  field is 2 double quotes
+* * * What if a  field is 3 single quotes
+* * * What if a  field is 3 double quotes
+* * * What if a  field is 4 single quotes
+* * * What if a  field is 4 double quotes
+* * * WHat if an entire row is missing
 """
 
 
@@ -99,6 +140,7 @@ import re
 import datetime
 from fractions import Fraction
 from math import ceil
+import copy
 
 
 
@@ -114,12 +156,6 @@ def my_round(num_in, round_to = 0):
 	else:
 		return round(num_in,round_to)
 
-def PrintNRows(iterable_object, Nrows = 4):
-	for i, row in enumerate(iterable_object):
-		print(i,row)
-		if (i >= (Nrows-1)):
-			break
-
 
 def CleanWhitespace(string_in):
 	#convert all contiguous whitespace to be single space
@@ -128,18 +164,32 @@ def CleanWhitespace(string_in):
 	return cleaned_string
 
 
-def DateToString(datetime_in):
-    		return datetime_in.strftime("%m/%d/%Y %I:%M:%S %p")
 
 
-def IncreaseMonthByM(month_in,M):
-	return datetime.datetime(
-			year=month_in.year,
-			month=month_in.month + M,
-			day=month_in.day,
-			hour=month_in.hour,
-			minute=month_in.minute,
-			second=month_in.second)
+
+def IncreaseMonthByOne(datetime_in):
+
+	#Inputs: 
+	## datetime_in must be a datetime object set at year/month at midnight of first day
+	#Output:
+	## Must return a datetime object with same features as input, one month ahead
+
+	if datetime_in.month < 12:
+		return datetime.datetime(
+			year=datetime_in.year,
+			month=(datetime_in.month + 1),
+			day=datetime_in.day,
+			hour=datetime_in.hour,
+			minute=datetime_in.minute,
+			second=datetime_in.second)
+	else:
+		return datetime.datetime(
+			year=datetime_in.year + 1,
+			month=1,
+			day=datetime_in.day,
+			hour=datetime_in.hour,
+			minute=datetime_in.minute,
+			second=datetime_in.second)
 
 
 
@@ -155,8 +205,8 @@ def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_
         if any(dict_i[key] == value for dict_i in my_dictlist):
             return my_dictlist
         else:
-        	#create new temp dict
-        	dict_j = dict_i.copy()
+        	#create new temp dict . shallow copy OK bc not compound object
+        	dict_j = dict(dict_i)
         	#modify the temp dict so it has the missing key:value pair.
         	dict_j[key] = value
         	#perform imputation
@@ -180,13 +230,39 @@ output_filepath = project_directory / 'output' / "report.csv"
 # keep track of min/max date
 #########
 input0 = []  # object that will be my input data
+
+
+#year and month is obligatory
+#In excel, the only formats where day appears before month is when month is written
+
+
+def StringToDate_ManyFormats(str_in):
+	# allow for equivalency of dash and / remove comma
+	str_in1 = str_in.replace('-','/').replace(',','')
+
+	
+		try:
+			return datetime.datetime.strptime(str_in, date_format)
+		except ValueError:
+			pass
+	raise ValueError('Cant parse that date format:', str_in)
+	
+
+
+with open(input_filepath, newline = '', mode ='r') as csvfile:
+    try:
+        csv.Sniffer().sniff(csvfile.read(1024))  # take a 1024B (max) portion of the file and try to get the Dialect
+        csvfile.seek(0)
+    except csv.Error:
+        print('Error Reading CSV')
+
 unique_values_date = set()  # keep track of unique dates
-with open(input_filepath) as csvfile:
+with open(input_filepath, newline = '',mode = 'r') as csvfile:
 	reader = csv.DictReader(csvfile)
 	for row in reader:
 		# convert the Date variable which is a string to be a datetime
 		# Keep only 1st 10 characters to allow for irregularity in date/datetime input
-		yearmonth_as_datetime0 = datetime.datetime.strptime(row['Date'][:10], "%m/%d/%Y")
+		yearmonth_as_datetime0 = StringToDate_ManyFormats(str_in = row['Date'])
 		# collapse that date into a yearmonth, set at midnight of the first of the month
 		yearmonth_as_datetime1 = datetime.datetime(
 			year=yearmonth_as_datetime0.year,
@@ -197,7 +273,6 @@ with open(input_filepath) as csvfile:
 			second=0)
 
 		# reformat for appending into input0
-		yearmonth_out = yearmonth_as_datetime1
 		border_out = CleanWhitespace(row['Border'])
 		measure_out = CleanWhitespace(row['Measure'])
 		value_out = int(row['Value'])
@@ -208,7 +283,7 @@ with open(input_filepath) as csvfile:
 		# prepare output: keep only border, date, measure, and value
 		output_keys = ['Border', 'Date', 'Measure', 'Value']
 		output_values = [border_out,
-						 yearmonth_out,
+						 yearmonth_as_datetime1,
 						 measure_out,
 						 value_out
 						 ]
@@ -241,13 +316,7 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 	#j is a grouped object that, when converted to list, is a list of dicts 
 	## this list of dicts is all the available data rows for that border*measure 
 	## that is the sub-object we are iterating by
-	#print(i)
-	#print(list(j))
 	j_as_list = list(j)
-	#print(j_as_list['Date'] in d for d in date_range)
-	#within each list(j), if 
-	
-	#summarised_data = []
 
 	running_total_previous_month = 0
 	index_this_month = 1
@@ -257,9 +326,9 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 		dictlist_augmented = PadDictlistWithCustomValues(
 			key='Date', 
 			value = this_month_datetime, 
-			my_dictlist = j_as_list, ##i can probably filter this if it would make execution faster but only if this fxn can handle an empty list
+			my_dictlist = j_as_list, 
 			key_to_impute = 'Value', 
-			imputed_value = 0.00)
+			imputed_value = 0)
 		if index_this_month == 1:
 			moving_average = 0.00
 		else:
@@ -271,34 +340,34 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 
 		returndict = {'Border':dictlist_augmented[0]['Border'], 
 					'Measure':dictlist_augmented[0]['Measure'], 
-					'Date':DateToString(this_month_datetime), 
+					'Date':datetime_in.strftime("%m/%d/%Y %I:%M:%S %p"), 
 					'Value':total_this_month,
 					'Average': int(my_round(moving_average))
 					}
 
-		summarised_data = list(filter(lambda d: d['Value'] > 0.0001, summarised_data))
 		summarised_data.append(returndict)
+		summarised_data = list(filter(lambda d: d['Value'] > 0.0001, summarised_data))
+	
 		
 
 
 		index_this_month = index_this_month + 1
 		running_total_previous_month = running_total_previous_month + total_this_month
-		this_month_datetime =  IncreaseMonthByM(this_month_datetime,1)
+		this_month_datetime =  IncreaseMonthByOne(this_month_datetime)
 
 
 
 
 
 
-summarised_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
-print(summarised_data)
+out_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
 
 
 
 
-with open(output_filepath, 'w',newline='\n') as output_file:
+with open(output_filepath, mode='w',newline ='') as output_file:
     dict_writer = csv.DictWriter(output_file, 
     	fieldnames = ['Border','Date','Measure','Value','Average'])
     dict_writer.writeheader()
-    dict_writer.writerows(summarised_data)
+    dict_writer.writerows(out_data)
 
