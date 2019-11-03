@@ -1,131 +1,3 @@
-"""
-TEST IDEAS:
-* Change around formats in excel:
-* * * 
-* Add weird characters in excel:
-* * * comma in the middle of a string
-* * * comma in the end of a string
-* * * comma in the beginning of a string
-* * * first char of a cell is a comma
-* * * last char of a cell is a comma
-* * * first char of first cell is a comma
-* * * last char of last cell is a comma
-* * * all of the above but for newline characters n and r
-* Value Field Formatting
-* * * Value field is manually formatted numeric
-* * * Value field has comma or point separators
-* * * Value field has decimal points
-* * * Value field has non-numeric characters
-* * * Scientific Notation
-* Date Field Formatting
-* * * Try a wide variety of date formats
-* Text Field possible formatting troubles
-* * * What if dates are in different formats
-* * * What if theres a comma in one of the fields
-* * * What if theres 2 commas in one of the fields
-* * * What if two fields have a comma
-* * * What if the columns in the csv are in different orders
-* Data cardinality edge cases
-* * * What if there are no rows
-* * * What if only one row (one border*measure*date)
-* * * What if only one border*measure*date Category (but many rows)
-* * * What if only one Border*measure Category
-* * * What if only one Border*date Category
-* * * What if only one Measure*date Category
-* * * What if only one Morder Category
-* * * What if only one Date Category
-* * * What if only one Measure Category
-* Data missigness
-* * * What if a  field is blank?
-* * * What if a  field is =na()?
-* * * What if a  field is a single quote
-* * * What if a  field is a double quote
-* * * What if a  field is 2 single quotes
-* * * What if a  field is 2 double quotes
-* * * What if a  field is 3 single quotes
-* * * What if a  field is 3 double quotes
-* * * What if a  field is 4 single quotes
-* * * What if a  field is 4 double quotes
-* * * WHat if an entire row is missing
-"""
-
-
-"""
-##############OVERVIEW##############
-For this challenge, we want to you to 
-calculate the total number of times 
-vehicles, equipment, passengers and pedestrians 
-cross the 
-U.S.-Canadian and U.S.-Mexican borders 
-each month. 
-
-We also want to know the 
-running monthly average of total number of crossings 
-for that type of 
-crossing and border.
-
-
-###INPUTS:####
-Border_Crossing_Entry_Data.csv 
-ALl columns will be read as strings, but can be converted
-COLUMNS : 
-	Port Name (ignore)
-	State (ignore)
-	Port Code (ignore)
-	Border (keep)
-	Date (keep)
-	Measure (keep)
-	Value (keep)
-	Location (ignore)
-
-
-
-###OUTPUTS:####
-report.csv 
-File must contain variables Border,Date,Measure,Value,Average
-File must be unique at Border*Date*Measure
-File must be sorted (desc) by date, value, measure, border
-
-
-
-
-####SCRIPT SUMMARY######
-### STEP 1 : READIN INPUT AND ENSURE PROPER FORMAT
-### 1A REFORMAT VARIABLES: DictReader can only read strings
-### 1B REDUCE SIZE: keep only the fields I care about
-
-
-#### STEP 2 : PREPARE DATA FOR SUMMARIZING
-#### If a given border*meausure combination does not exist, no problem
-#### But if for a given border*measure, there are missing date entries
-#### That will make my moving average incorrect (need to pad with zeros)
-#### Within each border*measure combination, insert value 0 for missing dates
-
-
-#### STEP 3 : CREATE SUMMARY STATISTICS FOR EACH BORDER*MEASURE*DATE
-#### 3A. SORT DATA SO THAT I CAN USE INTERTOOLS.GROUPBY 
-#### 3B. FOR EACH BORDER*MEASURE*DATE CALCULATE NUMBER OF CROSSINGS
-#### 3C. WITHIN EACH BORDER*MEASURE, APPEND MOVING AVERAGE FOR THAT MONTH
-#### 3D. TRANSFORM RUNNING TOTAL 
-####FOR EACH BORDER*CROSSING TYPE (aka measure) , CALCULATE:
-		FOR EACH MONTH:
-			TOTAL CROSSINGS
-			ROUND(PREVIOUS MONTH'S RUNNING TOTAL DIVIDED BY THIS MONTHS ORDER IN TIME)
-
-
-
-
-
-SORT OUTPUT FILE
-FILTER TO ONLY INCLUDE CASES WITH VALUE = 0
-MAKE SURE IT CONTAINS THE RIGHT VARIABLES
-MAKE SURE IT IS KEYED AT THE RIGHT LEVEL
-MAKE SURE IT HAS THE RIGHT NUMBER OF ROWS (AKA UNIQUE CROSSTABS OF KEYS INCLUDING EMPTY MONTHS OR CATEGORIES)
-
-"""
-
-
-
 #!/usr/bin/python3
 
 import csv
@@ -141,85 +13,22 @@ import datetime
 from fractions import Fraction
 from math import ceil
 import copy
+from define_functions import *
 
 
-
-
-
-def my_round(num_in, round_to = 0):
-	twice_my_num = num_in * 2
-	# if twice my number is a whole number then 
-	# using the normal round function will use
-	# bankers rounding and i want integer rounding
-	if twice_my_num % 1 == 0 :
-		return ceil(num_in)
-	else:
-		return round(num_in,round_to)
-
-
-def CleanWhitespace(string_in):
-	#convert all contiguous whitespace to be single space
-	#remove leading and trailing whitespace,
-	cleaned_string = re.sub(r'\s+', ' ', string_in).strip()
-	return cleaned_string
-
-
-
-
-
-def IncreaseMonthByOne(datetime_in):
-
-	#Inputs: 
-	## datetime_in must be a datetime object set at year/month at midnight of first day
-	#Output:
-	## Must return a datetime object with same features as input, one month ahead
-
-	if datetime_in.month < 12:
-		return datetime.datetime(
-			year=datetime_in.year,
-			month=(datetime_in.month + 1),
-			day=datetime_in.day,
-			hour=datetime_in.hour,
-			minute=datetime_in.minute,
-			second=datetime_in.second)
-	else:
-		return datetime.datetime(
-			year=datetime_in.year + 1,
-			month=1,
-			day=datetime_in.day,
-			hour=datetime_in.hour,
-			minute=datetime_in.minute,
-			second=datetime_in.second)
-
-
-
-
-
-def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_value = 0.00):
-	#This function scans a dictlist (my_dictlist) for a key:value pair
-	#If key:value pair is found, it returns dictlist as-is
-	#If not, it returns an augmented dictlist with ONE additional row
-	#The additional row is a copy of the FIRST row, with TWO modifications
-	### modify the key:value pair, and impute one additional value in dict
-    for dict_i in my_dictlist:
-        if any(dict_i[key] == value for dict_i in my_dictlist):
-            return my_dictlist
-        else:
-        	#create new temp dict . shallow copy OK bc not compound object
-        	dict_j = dict(dict_i)
-        	#modify the temp dict so it has the missing key:value pair.
-        	dict_j[key] = value
-        	#perform imputation
-        	dict_j[key_to_impute] = imputed_value
-        	ReturnsNone = my_dictlist.extend([dict(dict_j)])
-        	return my_dictlist
+	
 
 # Define  global variables
 thisfile_path = Path(__file__)
 project_directory = thisfile_path.parent.parent
-input_filepath = project_directory / 'input' / "Border_Crossing_Entry_Data.csv"
+input_filepath = project_directory / 'input' / "large_Border_Crossing_Entry_Data.csv"
 output_filepath = project_directory / 'output' / "report.csv"
+datetime_format_options_filepath = project_directory / 'src' / "acceptable_date_formats.py"
 
+
+
+
+exec(open(datetime_format_options_filepath).read())
 
 
 
@@ -230,25 +39,6 @@ output_filepath = project_directory / 'output' / "report.csv"
 # keep track of min/max date
 #########
 input0 = []  # object that will be my input data
-
-
-#year and month is obligatory
-#In excel, the only formats where day appears before month is when month is written
-
-
-def StringToDate_ManyFormats(str_in):
-	# allow for equivalency of dash and / remove comma
-	str_in1 = str_in.replace('-','/').replace(',','')
-
-	
-		try:
-			return datetime.datetime.strptime(str_in, date_format)
-		except ValueError:
-			pass
-	raise ValueError('Cant parse that date format:', str_in)
-	
-
-
 with open(input_filepath, newline = '', mode ='r') as csvfile:
     try:
         csv.Sniffer().sniff(csvfile.read(1024))  # take a 1024B (max) portion of the file and try to get the Dialect
@@ -290,8 +80,6 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 
 		# add rows (dicts) to input0 (list of dicts)
 		input0.append(dict(zip(output_keys, output_values)))
-
-
 
 
 
@@ -340,7 +128,7 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 
 		returndict = {'Border':dictlist_augmented[0]['Border'], 
 					'Measure':dictlist_augmented[0]['Measure'], 
-					'Date':datetime_in.strftime("%m/%d/%Y %I:%M:%S %p"), 
+					'Date':this_month_datetime.strftime("%m/%d/%Y %I:%M:%S %p"), 
 					'Value':total_this_month,
 					'Average': int(my_round(moving_average))
 					}
@@ -370,4 +158,6 @@ with open(output_filepath, mode='w',newline ='') as output_file:
     	fieldnames = ['Border','Date','Measure','Value','Average'])
     dict_writer.writeheader()
     dict_writer.writerows(out_data)
+
+
 
