@@ -1,5 +1,45 @@
 #!/usr/bin/python3
 ###########################
+# Default Library Dependencies
+###########################
+import csv
+from pathlib import Path
+import os
+import operator
+import itertools
+import datetime
+import locale
+import collections
+import re
+import datetime
+from fractions import Fraction
+from math import ceil
+import copy
+
+###########################
+# Define  global variables
+###########################
+#this file and project directory
+thisfile_path = Path(__file__)
+project_directory = thisfile_path.parent.parent
+#input and output files
+input_filepath = project_directory / 'input' / "Border_Crossing_Entry_Data.csv"
+output_filepath = project_directory / 'output' / "report.csv"
+#input and output files
+datetime_format_options_filepath = project_directory / 'src' / "acceptable_date_formats.py"
+
+
+###########################
+# Other Dependencies
+###########################
+# my custom helper functions
+from define_functions import *
+# execute a script that creates a list called final_list_of_datetime_strings
+# This is a list of datetime formats my script will accept
+#exec(open(datetime_format_options_filepath).read())
+
+#!/usr/bin/python3
+###########################
 ###########################
 #
 # This script produces a list called final_list_of_datetime_strings
@@ -12,17 +52,15 @@
 ###########################
 
 ######################################################
-#There are only a few ways to express hour:minute:second
+#There are only two ways to express hour:minute:second
 ######################################################
 hms_combinations = [
 {'hour': '%H:', 'minute': '%M:', 'second': '%S', 'AMPM': ' %p'}, 
-{'hour': '%H:', 'minute': '%M:', 'second': '%S'}, 
 {'hour': '%I:', 'minute': '%M:', 'second': '%S'}
 ]
 #Its also possible to express hour:minute without seconds
 hm_combinations = [
 {'hour': '%H:', 'minute': '%M:', 'AMPM': ' %p'}, 
-{'hour': '%H:', 'minute': '%M:'}, 
 {'hour': '%I:', 'minute': '%M:'}
 ]
 ######################################################
@@ -92,25 +130,33 @@ list_of_all_date_combinations = [element.replace('%','/%')[1:] for element in Di
 #For date, allow separator to also be a space
 list_of_all_date_combinations_space = [element.replace('/',' ') for element in list_of_all_date_combinations]
 #All times must be preceded by a space so that there is a separator between date & time
-#Dont allow for trailing/leading colons
 final_all_times = [ f' {x}'.replace(': %p', ' %p').strip(':') for x in list_of_all_time_combinations ]
 final_all_dates = list_of_all_date_combinations+ list_of_all_date_combinations_space
 
 
 list_of_recognized_datetime_formats = list(itertools.product(final_all_dates, final_all_times))
 
-#For speed, first entry will be the default input
+#For speed, first entry will be default input
 final_list_of_datetime_strings = ["%m/%d/%Y %H:%M:%S %p"] 
 #Append all other formats after this. its okay that there will be a duplicate
 for t in list_of_recognized_datetime_formats:
 	string_out = ''
 	for v in t:
 		string_out = CleanWhitespace(string_out + v + str(''))
-		#print(string_out)
+	print(string_out)
+
 	final_list_of_datetime_strings.append(string_out)
 
+print(type("%B %Y"))
+print(type(final_list_of_datetime_strings[-1]))
+print(len("%B %Y"))
+print(len(final_list_of_datetime_strings[-1]))
+print("%B %Y" == final_list_of_datetime_strings[-1])
 
 
-#print(final_list_of_datetime_strings)
+#StringToDate_ManyFormats(str_in = '3/1/19 00:00',list_of_formats = ["%m/%d/%Y %H:%M"])
 
-#print("%m/%d/%y %H:%M" in final_list_of_datetime_strings)
+#print(datetime.datetime.strptime("3/1/2014 9:55", "%m/%d/%Y %H:%M"))
+#str_in = '3/1/19 00:00'
+#str_in1 = str_in.replace(',','').replace('-','/')
+#datetime.datetime.strptime(str_in1, "%m/%d/%y %H:%M")
