@@ -296,7 +296,7 @@ print(summarised_data)
 
 
 
-with open(output_filepath, 'w') as output_file:
+with open(output_filepath, 'w',newline='\n') as output_file:
     dict_writer = csv.DictWriter(output_file, 
     	fieldnames = ['Border','Date','Measure','Value','Average'])
     dict_writer.writeheader()
