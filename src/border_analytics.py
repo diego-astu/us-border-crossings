@@ -96,7 +96,7 @@ import datetime
 import locale
 import collections
 import re
-from dateutil.relativedelta import relativedelta
+import datetime
 from fractions import Fraction
 from math import ceil
 
@@ -136,13 +136,6 @@ def DateToString(datetime_in):
     		return datetime_in.strftime("%m/%d/%Y %I:%M:%S %p")
 
 
-
-def ListAllMonths(firstmonth, lastmonth):
-	daterange = []
-	while firstmonth <= lastmonth:
-		daterange.append(firstmonth)
-		firstmonth += relativedelta(months=1)
-	return daterange
 
 
 
@@ -229,10 +222,9 @@ with open(input_filepath) as csvfile:
 
 
 #determine the range of dates that must exist for each border*measure
-date_range = ListAllMonths(
-	firstmonth=min(unique_values_date),
-	lastmonth=max(unique_values_date)
-	)
+firstmonth=min(unique_values_date),
+lastmonth=max(unique_values_date)
+
 #I want to groupby . this necessitates sorting
 sorted_input = sorted(input0, key=operator.itemgetter('Border', 'Measure'))
 
