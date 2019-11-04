@@ -16,7 +16,7 @@ import time
 import string
 
 
-def my_round(num_in, round_to = 0):
+def my_round(num_in):
 	twice_my_num = num_in * 2
 	# if twice my number is a whole number then 
 	# using the normal round function will use
@@ -24,7 +24,7 @@ def my_round(num_in, round_to = 0):
 	if twice_my_num % 1 == 0 :
 		return ceil(num_in)
 	else:
-		return round(num_in,round_to)
+		return round(num_in)
 
 
 def CleanWhitespace(string_in):
@@ -34,16 +34,11 @@ def CleanWhitespace(string_in):
 	return cleaned_string
 
 
-
-
-
 def IncreaseMonthByOne(datetime_in):
-
 	#Inputs: 
 	## datetime_in must be a datetime object set at year/month at midnight of first day
 	#Output:
 	## Must return a datetime object with same features as input, one month ahead
-
 	if datetime_in.month < 12:
 		return datetime.datetime(
 			year=datetime_in.year,
@@ -60,6 +55,11 @@ def IncreaseMonthByOne(datetime_in):
 			hour=datetime_in.hour,
 			minute=datetime_in.minute,
 			second=datetime_in.second)
+
+
+def RemoveNonNumeric(str_in):
+	str_out = re.sub("[^0-9]", "", str_in)
+	return str_out
 
 
 
@@ -88,17 +88,25 @@ def PadDictlistWithCustomValues(key, value, my_dictlist, key_to_impute, imputed_
 
 def CombineComponents(dict_in):
 	keys = dict_in.keys()
+	#This function reads in a dictionary, 
+	#extracts the keys and the values, and 
+	#returns combinations of keys & values as a DictList
 
 	values = (dict_in[key] for key in keys)
 	combinations = [dict(zip(keys, combination)) for combination in (itertools.product(*values))]
 	return combinations
 
 def RemoveKeysListofDicts(LOD_in,keygone):
+	#This function reads in a list of dicts and subsets it
+	#It removes key:value pairs specified by keys in keygone
 	listofdicts = copy.deepcopy(LOD_in)
 	for d in listofdicts:
 		del d[keygone]
 	return listofdicts
 def DictlistToStringlist(dictlist_in):
+	#this function reads in a list of dicts 
+	#iterates through each value and appends it to a list
+	#outputs a list of strings
 	outlist = []
 	for d in dictlist_in:
 		stringyy = ''
@@ -131,9 +139,6 @@ def StringToDate_ManyFormats(str_in,list_of_formats = ["%m/%d/%Y %H:%M:%S %p"] )
 
 
 
-def RemoveNonNumeric(str_in):
-	str_out = re.sub("[^0-9]", "", str_in)
-	return str_out
 
 
 def ReadValue_ManyFormats(str_in):
@@ -156,4 +161,3 @@ def ReadValue_ManyFormats(str_in):
 			return 0
 		else:
 			return int(remove_nonumeric)
-

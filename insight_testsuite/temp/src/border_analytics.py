@@ -96,7 +96,7 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 			input0.append(dict(zip(output_keys, output_values)))
 
 
-print(input0)
+
 
 #########
 #STEP 2 : PAD DATA WITH ZEROS WHERE NECESSARY AND SUMMARIZE
@@ -155,10 +155,10 @@ for i,j in itertools.groupby(sorted_input, key=lambda x:(x['Border'], x['Measure
 
 
 
+ 
 
-
-out_data = sorted(summarised_data, key=operator.itemgetter('Date','Value','Measure','Average'), reverse=True)
-
+out_data = sorted(summarised_data, key=lambda i: (datetime.datetime.strptime(i['Date'], "%m/%d/%Y %I:%M:%S %p"), i['Value'], i['Measure'],i['Average']),
+ reverse=True)
 
 
 

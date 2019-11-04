@@ -86,15 +86,18 @@ dictlist_all_date_combinations = amdy_combinations + admy_combinations + mdy_com
 ######################################################
 #time is optional so add blank +[''] so that we can combine Date formats with the absence of time
 list_of_all_time_combinations = DictlistToStringlist(dictlist_all_time_combinations) + [''] 
+
 #Currently dates are separated by % but we also need a slash at the front
 #But the first character in a date string cannot be a slash so exclude first character using [1:]
 list_of_all_date_combinations = [element.replace('%','/%')[1:] for element in DictlistToStringlist(dictlist_all_date_combinations)]
+
 #For date, allow separator to also be a space
 list_of_all_date_combinations_space = [element.replace('/',' ') for element in list_of_all_date_combinations]
+
 #All times must be preceded by a space so that there is a separator between date & time
 #Dont allow for trailing/leading colons
 final_all_times = [ f' {x}'.replace(': %p', ' %p').strip(':') for x in list_of_all_time_combinations ]
-final_all_dates = list_of_all_date_combinations+ list_of_all_date_combinations_space
+final_all_dates = list_of_all_date_combinations + list_of_all_date_combinations_space
 
 
 list_of_recognized_datetime_formats = list(itertools.product(final_all_dates, final_all_times))
