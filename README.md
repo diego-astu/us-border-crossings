@@ -1,6 +1,8 @@
 # Border Crossing Analysis Exercise
 JD Astudillo
+
 Insight Data Engineering, Janary 2020 Cycle
+
 Exercise completed : October 28 -November 3, 2019
 
 # Key Files:
@@ -24,7 +26,7 @@ Exercise completed : October 28 -November 3, 2019
 ## src/acceptable_date_formats.py
 * This script produces a list called final_list_of_datetime_strings which contains all datetime formats my program will accept. 
 * These formats come from all date formats seen in Excel (en_US locale) that specified a month and a year
-* Structure:
+* Overview:
     * There are only a handful of ways to express hour:minute:second. I list these out as DictLists manually
     * Year:month:day is more tricky.
         * There are several "formats" to express year/month/day
@@ -39,8 +41,8 @@ Exercise completed : October 28 -November 3, 2019
     * I have one duplicate in this list, because I force the default format ("%m/%d/%Y %H:%M:%S %p") to be at index 0.
 
 ## src/define_functions.py
-* my_round(num_in, round_to = 0):
-   * Turns out Python does banker's rounding as opposed to rounding to the nearest integer. That was a fun thing to learn...
+* my_round(num_in):
+   * Turns out Python does banker's rounding as opposed to rounding to the nearest integer. 
    * This simple function performs rounding to the nearest integer
    * If twice num_in is a whole number, return ceil(num_in); else round()
 * CleanWhitespace(string_in):

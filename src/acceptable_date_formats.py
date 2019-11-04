@@ -113,7 +113,3 @@ for t in list_of_recognized_datetime_formats:
 	final_list_of_datetime_strings.append(string_out)
 
 
-
-#print(final_list_of_datetime_strings)
-
-#print("%m/%d/%y %H:%M" in final_list_of_datetime_strings)

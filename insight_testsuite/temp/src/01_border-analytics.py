@@ -57,18 +57,16 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 	reader = csv.DictReader(csvfile,restval='')
 
 	for row in reader:
+		#I will only read in rows with valid date&border&measure!
 		if (row['Date'] != '' and row['Border'] != '' and row['Measure'] != ''):
-			# convert the Date variable which is a string to be a datetime
-			# Keep only 1st 10 characters to allow for irregularity in date/datetime input
 			
+			# convert the Date variable which is a string to be a datetime
+			# Allow many formats as defined in acceptable_date_formats.py
 			yearmonth_as_datetime0 = StringToDate_ManyFormats(str_in = row['Date'],
 				list_of_formats = final_list_of_datetime_strings)
+			
 			# collapse that date into a yearmonth, set at midnight of the first of the month
-
-			if yearmonth_as_datetime0 == '':
-				yearmonth_as_datetime1 = yearmonth_as_datetime0
-			else:
-				yearmonth_as_datetime1 = datetime.datetime(
+			yearmonth_as_datetime1 = datetime.datetime(
 					year=yearmonth_as_datetime0.year,
 					month=yearmonth_as_datetime0.month,
 					day=1,
@@ -102,7 +100,6 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 #STEP 2 : PAD DATA WITH ZEROS WHERE NECESSARY AND SUMMARIZE
 #########
 #Before summarizing, I must pad data with zeros for dates that do not appear
-#determine the range of dates that must exist for each border*measure
 firstmonth=min(unique_values_date)
 lastmonth=max(unique_values_date)
 summarised_data = []
@@ -167,3 +164,7 @@ with open(output_filepath, mode='w',newline ='') as output_file:
     	fieldnames = ['Border','Date','Measure','Value','Average'])
     dict_writer.writeheader()
     dict_writer.writerows(out_data)
+
+
+print('Complete')
+

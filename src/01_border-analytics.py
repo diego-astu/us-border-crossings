@@ -45,7 +45,7 @@ exec(open(datetime_format_options_filepath).read())
 
 
 #########
-# STEP A : 
+# STEP 1 : 
 # read in dataset into list of dicts called input0
 # make sure data conforms to desired formats (int,string,datetime)
 # keep track of unique date values
@@ -100,8 +100,6 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 #STEP 2 : PAD DATA WITH ZEROS WHERE NECESSARY AND SUMMARIZE
 #########
 #Before summarizing, I must pad data with zeros for dates that do not appear
-
-#determine the range of dates that must exist for each border*measure
 firstmonth=min(unique_values_date)
 lastmonth=max(unique_values_date)
 summarised_data = []
@@ -169,3 +167,4 @@ with open(output_filepath, mode='w',newline ='') as output_file:
 
 
 print('Complete')
+
