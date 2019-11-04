@@ -1,0 +1,8 @@
+Port Name,State,Port Code,Border,Date,Measure,Value,Location
+Derby Line,Vermont,209,US-Canada Border,03/01/2019 12:00:00 AM,Truck Containers Full,6483,POINT (-72.09944 45.005)
+Norton,Vermont,211,US-Canada Border,03/01/2019 12:00:00 AM,Trains,19,POINT (-71.79528000000002 45.01)
+,,,,,,,
+,,,,,,,
+Frontier,Washington,3020,US-Canada Border,02/01/2019 12:00:00 AM,Truck Containers Empty,1319,POINT (-117.78134000000001 48.910160000000005)
+Presidio,Texas,2403,US-Mexico Border,01/01/2019 12:00:00 AM,Pedestrians,0,POINT (-104.37167 29.56056)
+,,,,,,,

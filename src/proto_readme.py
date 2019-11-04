@@ -32,7 +32,7 @@ TEST IDEAS:
 * * * What if only one Border*measure Category
 * * * What if only one Border*date Category
 * * * What if only one Measure*date Category
-* * * What if only one Morder Category
+* * * What if only one Border Category
 * * * What if only one Date Category
 * * * What if only one Measure Category
 * Data missigness

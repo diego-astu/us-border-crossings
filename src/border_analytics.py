@@ -55,8 +55,9 @@ unique_values_date = set()  # keep track of unique dates
 
 with open(input_filepath, newline = '',mode = 'r') as csvfile:
 	reader = csv.DictReader(csvfile,restval='')
+
 	for row in reader:
-		if any(x.strip() for x in row):
+		if (row['Date'] != '' and row['Border'] != '' and row['Measure'] != ''):
 			# convert the Date variable which is a string to be a datetime
 			# Keep only 1st 10 characters to allow for irregularity in date/datetime input
 			
@@ -64,7 +65,9 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 				list_of_formats = final_list_of_datetime_strings)
 			# collapse that date into a yearmonth, set at midnight of the first of the month
 
-			if yearmonth_as_datetime0 != '':
+			if yearmonth_as_datetime0 == '':
+				yearmonth_as_datetime1 = yearmonth_as_datetime0
+			else:
 				yearmonth_as_datetime1 = datetime.datetime(
 					year=yearmonth_as_datetime0.year,
 					month=yearmonth_as_datetime0.month,
@@ -93,7 +96,7 @@ with open(input_filepath, newline = '',mode = 'r') as csvfile:
 			input0.append(dict(zip(output_keys, output_values)))
 
 
-
+print(input0)
 
 #########
 #STEP 2 : PAD DATA WITH ZEROS WHERE NECESSARY AND SUMMARIZE
