@@ -12,10 +12,14 @@ Exercise completed : October 28 -November 3, 2019
 * Execute acceptable_date_formats.py, which yields list of acceptable Date formats
 * Performs analytic exercise
     1) read in dataset into DictList called input0
+    
         a) Format key data fields
+        
         b) Keep track of unique date fields. Will iterate over them later.
     2) Summarize data into DictList called summarised_data
+    
         a) Pad data with zero if dates do not appear. That is important for moving monthly average
+        
     3) Sort data and output into /output/report.csv
 ## src/acceptable_date_formats.py
 * This script produces a list called final_list_of_datetime_strings which contains all datetime formats my program will accept. 
